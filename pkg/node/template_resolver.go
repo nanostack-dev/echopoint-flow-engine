@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -65,6 +66,7 @@ func (tr *TemplateResolver) resolveString(s string) string {
 		s, func(match string) string {
 			// Extract variable name from {{varName}}
 			varName := match[2 : len(match)-2]
+			varName = strings.TrimSpace(varName)
 			if val, exists := tr.variables[varName]; exists {
 				return fmt.Sprintf("%v", val)
 			}
