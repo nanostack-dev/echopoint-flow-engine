@@ -1,6 +1,7 @@
 package node
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,8 @@ type DebugNode struct {
 	BaseNode
 	Data DebugData `json:"data"`
 }
+
+var debugUnresolvedPattern = regexp.MustCompile(`\{\{[^}]+\}\}`)
 
 // AsDebugNode safely casts an AnyNode to a DebugNode
 func AsDebugNode(node AnyNode) (*DebugNode, bool) {
@@ -84,7 +87,7 @@ func (n *DebugNode) Execute(ctx ExecutionContext) (AnyExecutionResult, error) {
 
 	for _, expr := range n.Data.Expressions {
 		resolved, err := resolver.Resolve(expr)
-		
+
 		item := DebugResultItem{
 			Expression: expr,
 		}
@@ -96,6 +99,12 @@ func (n *DebugNode) Execute(ctx ExecutionContext) (AnyExecutionResult, error) {
 				Err(err).
 				Msg("Failed to resolve debug expression")
 			item.Error = err.Error()
+			results = append(results, item)
+			continue
+		}
+
+		if resolvedStr, ok := resolved.(string); ok && debugUnresolvedPattern.MatchString(resolvedStr) {
+			item.Error = "unresolved template variables"
 		} else {
 			item.Value = resolved
 		}
