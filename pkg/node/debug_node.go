@@ -49,10 +49,21 @@ func (n *DebugNode) GetAssertions() []CompositeAssertion {
 // InputSchema returns input keys derived from the expressions
 func (n *DebugNode) InputSchema() []string {
 	// Simple implementation: scan expressions for {{node.key}} patterns
-	// For now, we rely on the generic template resolver which handles this dynamic input
-	// In a robust implementation, we'd parse the templates here.
+	// For now, we rely on the generic template resolver which handles this dynamic input.
+	// Extract variables per expression so []string is handled correctly.
 	si := &SchemaInference{}
-	return si.ExtractTemplateVariables(n.Data.Expressions)
+	vars := make(map[string]struct{})
+	for _, expr := range n.Data.Expressions {
+		for _, v := range si.ExtractTemplateVariables(expr) {
+			vars[v] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(vars))
+	for v := range vars {
+		result = append(result, v)
+	}
+	return result
 }
 
 // OutputSchema for debug nodes is typically empty as they are side-effect only
